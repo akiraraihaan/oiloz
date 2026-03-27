@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Oil Optimization System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-oil-can text-2xl"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">Oil Optimization</h1>
+                        <p class="text-blue-100 text-sm">Well {{ well_name }}</p>
+                    </div>
+                </div>
+                <div class="flex gap-6">
+                    <a href="/" class="hover:text-blue-200 transition">Prediction</a>
+                    <a href="/upload" class="hover:text-blue-200 transition">Batch Upload</a>
+                    <a href="/history" class="hover:text-blue-200 transition">History</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 mt-16">
+        <div class="max-w-7xl mx-auto px-4 py-8 text-center">
+            <p>&copy; 2024 Oil Optimization System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

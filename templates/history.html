@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}History - Oil Optimization System{% endblock %}
+
+{% block content %}
+
+<div class="bg-white rounded-lg shadow-lg p-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-history text-blue-600 mr-2"></i>
+            Prediction History
+        </h2>
+        <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+            <i class="fas fa-download mr-2"></i>
+            Export as CSV
+        </button>
+    </div>
+
+    <div id="loadingSpinner" class="text-center py-12">
+        <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+        <p class="text-gray-600 mt-4">Loading history...</p>
+    </div>
+
+    <div id="historyTable" class="hidden overflow-x-auto"></div>
+    
+    <div id="emptyState" class="hidden text-center py-12">
+        <i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>
+        <p class="text-gray-600">No predictions yet</p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', loadHistory);
+    document.getElementById('exportBtn').addEventListener('click', exportHistory);
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/history?limit=100');
+            const data = await response.json();
+
+            document.getElementById('loadingSpinner').classList.add('hidden');
+
+            if (data.count === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                return;
+            }
+
+            // Build table
+            let html = '<table class="w-full border border-gray-300"><thead class="bg-gray-100"><tr>';
+            html += '<th class="border px-4 py-2 text-left">Date</th>';
+            html += '<th class="border px-4 py-2 text-right">Oil (Actual)</th>';
+            html += '<th class="border px-4 py-2 text-right">Oil (Optimal)</th>';
+            html += '<th class="border px-4 py-2 text-right">Oil Gain</th>';
+            html += '<th class="border px-4 py-2 text-right">Choke (Actual)</th>';
+            html += '<th class="border px-4 py-2 text-right">Choke (Recommended)</th>';
+            html += '</tr></thead><tbody>';
+
+            data.data.forEach(prediction => {
+                html += `<tr class="border-b hover:bg-gray-50">`;
+                html += `<td class="border px-4 py-2">${prediction.prediction_date}</td>`;
+                html += `<td class="border px-4 py-2 text-right">${prediction.predicted_oil.toFixed(2)}</td>`;
+                html += `<td class="border px-4 py-2 text-right">${prediction.predicted_oil.toFixed(2)}</td>`;
+                html += `<td class="border px-4 py-2 text-right"><span class="text-green-600 font-semibold">+${prediction.potential_oil_gain.toFixed(2)}</span></td>`;
+                html += `<td class="border px-4 py-2 text-right">${prediction.choke_actual.toFixed(3)}</td>`;
+                html += `<td class="border px-4 py-2 text-right">${prediction.choke_recommended.toFixed(3)}</td>`;
+                html += `</tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('historyTable').innerHTML = html;
+            document.getElementById('historyTable').classList.remove('hidden');
+        } catch (error) {
+            alert('Error loading history: ' + error.message);
+            document.getElementById('loadingSpinner').classList.add('hidden');
+        }
+    }
+
+    async function exportHistory() {
+        try {
+            const response = await fetch('/api/history/export');
+            const blob = await response.blob();
+            
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'oil_optimization_history.csv';
+            a.click();
+        } catch (error) {
+            alert('Error exporting: ' + error.message);
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Upload - Oil Optimization System{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+            <i class="fas fa-upload text-blue-600 mr-2"></i>
+            Batch Upload Excel
+        </h2>
+
+        <!-- File Upload Area -->
+        <div class="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50 mb-6 cursor-pointer hover:bg-blue-100 transition"
+             id="dropZone">
+            <i class="fas fa-cloud-upload-alt text-5xl text-blue-400 mb-4"></i>
+            <p class="text-gray-700 font-semibold mb-2">Drag and drop Excel file here</p>
+            <p class="text-gray-600 text-sm mb-4">or click to browse</p>
+            <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+            <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <i class="fas fa-folder-open mr-2"></i>
+                Select File
+            </button>
+        </div>
+
+        <!-- File Info -->
+        <div id="fileInfo" class="hidden bg-gray-50 rounded-lg p-4 mb-6">
+            <p class="text-gray-700">
+                <i class="fas fa-file-excel text-green-600 mr-2"></i>
+                <span id="fileName">filename.xlsx</span>
+            </p>
+        </div>
+
+        <!-- Upload Button -->
+        <button id="uploadBtn" 
+                class="w-full py-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-green-600 to-green-800 text-white hover:shadow-lg hidden"
+                disabled>
+            <i class="fas fa-play mr-2"></i>
+            Process File
+        </button>
+
+        <!-- Progress -->
+        <div id="progressSection" class="hidden mt-6">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-gray-700 font-semibold">Processing...</p>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progressBar" class="bg-green-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection" class="hidden mt-8">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                Processing Complete
+            </h3>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-600">Total Rows</p>
+                    <p class="text-3xl font-bold text-blue-600" id="totalRows">0</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-600">Successful</p>
+                    <p class="text-3xl font-bold text-green-600" id="successCount">0</p>
+                </div>
+                <div class="bg-red-50 rounded-lg p-4 text-center">
+                    <p class="text-sm text-gray-600">Failed</p>
+                    <p class="text-3xl font-bold text-red-600" id="failCount">0</p>
+                </div>
+            </div>
+
+            <!-- Download Options -->
+            <div class="flex gap-4">
+                <button id="downloadBtn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-download mr-2"></i>
+                    Download Results (CSV)
+                </button>
+                <button onclick="location.reload()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    <i class="fas fa-redo mr-2"></i>
+                    Upload Another File
+                </button>
+            </div>
+
+            <!-- Detailed Results Table -->
+            <div class="mt-6">
+                <h4 class="font-semibold text-gray-800 mb-3">Detailed Results</h4>
+                <div id="resultsTable" class="overflow-x-auto"></div>
+            </div>
+        </div>
+
+        <!-- Error Box -->
+        <div id="errorBox" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mt-6">
+            <p class="text-red-800"><i class="fas fa-exclamation-circle mr-2"></i><span id="errorMessage"></span></p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFile = null;
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const errorBox = document.getElementById('errorBox');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // File selection
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+            fileName.textContent = selectedFile.name;
+            fileInfo.classList.remove('hidden');
+            uploadBtn.disabled = false;
+            uploadBtn.classList.remove('hidden');
+            errorBox.classList.add('hidden');
+        }
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('bg-blue-200');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('bg-blue-200');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('bg-blue-200');
+        selectedFile = e.dataTransfer.files[0];
+        if (selectedFile && (selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls'))) {
+            fileName.textContent = selectedFile.name;
+            fileInfo.classList.remove('hidden');
+            uploadBtn.disabled = false;
+            uploadBtn.classList.remove('hidden');
+            errorBox.classList.add('hidden');
+        }
+    });
+
+    // Upload
+    uploadBtn.addEventListener('click', uploadFile);
+
+    async function uploadFile() {
+        if (!selectedFile) return;
+
+        uploadBtn.disabled = true;
+        document.getElementById('progressSection').classList.remove('hidden');
+        errorBox.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        try {
+            const response = await fetch('/api/upload-excel', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                errorBox.classList.remove('hidden');
+                errorMessage.textContent = data.error || 'Upload failed';
+            } else {
+                showResults(data);
+            }
+        } catch (error) {
+            errorBox.classList.remove('hidden');
+            errorMessage.textContent = 'Network error: ' + error.message;
+        } finally {
+            uploadBtn.disabled = false;
+            document.getElementById('progressSection').classList.add('hidden');
+        }
+    }
+
+    function showResults(data) {
+        const summary = data.summary;
+        document.getElementById('totalRows').textContent = summary.total;
+        document.getElementById('successCount').textContent = summary.processed;
+        document.getElementById('failCount').textContent = summary.failed;
+
+        // Show results table
+        const tableDiv = document.getElementById('resultsTable');
+        let html = '<table class="w-full border border-gray-300"><thead class="bg-gray-100"><tr>';
+        html += '<th class="border px-4 py-2 text-left">Row</th>';
+        html += '<th class="border px-4 py-2 text-left">Status</th>';
+        html += '<th class="border px-4 py-2 text-left">Details</th>';
+        html += '</tr></thead><tbody>';
+
+        data.results.forEach(result => {
+            const statusColor = result.success ? 'text-green-600' : 'text-red-600';
+            const statusIcon = result.success ? '✓' : '✗';
+            html += `<tr class="border-b hover:bg-gray-50">`;
+            html += `<td class="border px-4 py-2">${result.row}</td>`;
+            html += `<td class="border px-4 py-2"><span class="${statusColor}">${statusIcon}</span></td>`;
+            html += `<td class="border px-4 py-2">${result.success ? 'OK' : result.error}</td>`;
+            html += `</tr>`;
+        });
+
+        html += '</tbody></table>';
+        tableDiv.innerHTML = html;
+
+        document.getElementById('resultsSection').classList.remove('hidden');
+    }
+</script>
+{% endblock %}
