@@ -4,28 +4,70 @@
 
 {% block content %}
 
-<div class="bg-white rounded-lg shadow-lg p-8">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">
-            <i class="fas fa-history text-blue-600 mr-2"></i>
-            Prediction History
-        </h2>
-        <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-            <i class="fas fa-download mr-2"></i>
-            Export as CSV
+<!-- Header Section -->
+<div class="card rounded-2xl mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1.25rem; height: 1.25rem;">
+                    <path d="M7 2V5M17 2V5" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M3.5 9.09H20.5" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M21 8.5V17C21 20.7712 20.2288 22 16.5 22H7.5C3.77118 22 3 20.7712 3 17V8.5C3 4.77118 3.77118 3.5 7.5 3.5H16.5C20.2288 3.5 21 4.77118 21 8.5Z" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 14H15" stroke="#a855f7" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Prediction History
+            </h2>
+            <p class="text-gray-500 text-sm mt-1">Track all your previous predictions</p>
+        </div>
+        <button id="exportBtn" class="btn btn-primary btn-pill w-full sm:w-auto">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 0.9rem; height: 0.9rem;">
+                <path d="M12 2V14M12 14L7 9M12 14L17 9" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 14H3.5C4.77 14 6 15.23 6 16.5C6 17.77 4.77 19 3.5 19H3C1.9 19 1 18.1 1 17V15C1 13.9 1.9 13 3 13V14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M21 14H20.5C19.23 14 18 15.23 18 16.5C18 17.77 19.23 19 20.5 19H21C22.1 19 23 18.1 23 17V15C23 13.9 22.1 13 21 13V14" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            Export CSV
         </button>
     </div>
+</div>
 
-    <div id="loadingSpinner" class="text-center py-12">
-        <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
-        <p class="text-gray-600 mt-4">Loading history...</p>
+<!-- Loading State -->
+<div id="loadingSpinner" class="card rounded-2xl">
+    <div class="flex flex-col items-center justify-center py-16">
+        <div class="spinner mb-4"></div>
+        <p class="text-gray-600 font-medium">Loading your history...</p>
     </div>
+</div>
 
-    <div id="historyTable" class="hidden overflow-x-auto"></div>
-    
-    <div id="emptyState" class="hidden text-center py-12">
-        <i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>
-        <p class="text-gray-600">No predictions yet</p>
+<!-- History Table -->
+<div id="historyTable" class="hidden card rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th class="text-right">Oil (Actual)</th>
+                    <th class="text-right">Oil (Optimal)</th>
+                    <th class="text-right">Oil Gain</th>
+                    <th class="text-right">Choke (Actual)</th>
+                    <th class="text-right">Choke (Recommended)</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" class="hidden card rounded-2xl">
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 2.5rem; height: 2.5rem;">
+                <path d="M9 3H15C16.6569 3 18 4.34315 18 6V16C18 17.6569 16.6569 19 15 19H9C7.34315 19 6 17.6569 6 16V6C6 4.34315 7.34315 3 9 3Z" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 7H15" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <p class="empty-state-text">No predictions recorded yet. Start by running a prediction!</p>
     </div>
 </div>
 
@@ -48,34 +90,37 @@
                 return;
             }
 
-            // Build table
-            let html = '<table class="w-full border border-gray-300"><thead class="bg-gray-100"><tr>';
-            html += '<th class="border px-4 py-2 text-left">Date</th>';
-            html += '<th class="border px-4 py-2 text-right">Oil (Actual)</th>';
-            html += '<th class="border px-4 py-2 text-right">Oil (Optimal)</th>';
-            html += '<th class="border px-4 py-2 text-right">Oil Gain</th>';
-            html += '<th class="border px-4 py-2 text-right">Choke (Actual)</th>';
-            html += '<th class="border px-4 py-2 text-right">Choke (Recommended)</th>';
-            html += '</tr></thead><tbody>';
-
+            // Populate table body
+            const tableBody = document.getElementById('historyTableBody');
             data.data.forEach(prediction => {
                 const oil_optimal = prediction.predicted_oil + prediction.potential_oil_gain;
-                html += `<tr class="border-b hover:bg-gray-50">`;
-                html += `<td class="border px-4 py-2">${prediction.prediction_date}</td>`;
-                html += `<td class="border px-4 py-2 text-right">${prediction.predicted_oil.toFixed(2)}</td>`;
-                html += `<td class="border px-4 py-2 text-right text-green-600 font-semibold">${oil_optimal.toFixed(2)}</td>`;
-                html += `<td class="border px-4 py-2 text-right"><span class="text-green-600 font-semibold">+${prediction.potential_oil_gain.toFixed(2)}</span></td>`;
-                html += `<td class="border px-4 py-2 text-right">${prediction.choke_actual.toFixed(3)}</td>`;
-                html += `<td class="border px-4 py-2 text-right">${prediction.choke_recommended.toFixed(3)}</td>`;
-                html += `</tr>`;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${prediction.prediction_date}</td>
+                    <td class="text-right text-gray-700">${prediction.predicted_oil.toFixed(2)}</td>
+                    <td class="text-right">
+                        <span class="text-green-600 font-semibold">${oil_optimal.toFixed(2)}</span>
+                    </td>
+                    <td class="text-right">
+                        <span class="badge badge-success">+${prediction.potential_oil_gain.toFixed(2)}</span>
+                    </td>
+                    <td class="text-right text-gray-700">${prediction.choke_actual.toFixed(3)}</td>
+                    <td class="text-right text-blue-600 font-semibold">${prediction.choke_recommended.toFixed(3)}</td>
+                `;
+                tableBody.appendChild(row);
             });
 
-            html += '</tbody></table>';
-            document.getElementById('historyTable').innerHTML = html;
             document.getElementById('historyTable').classList.remove('hidden');
         } catch (error) {
-            alert('Error loading history: ' + error.message);
             document.getElementById('loadingSpinner').classList.add('hidden');
+            const historyTable = document.getElementById('historyTable');
+            historyTable.classList.remove('hidden');
+            historyTable.innerHTML = `
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle alert-icon"></i>
+                    Error loading history: ${error.message}
+                </div>
+            `;
         }
     }
 
@@ -89,6 +134,7 @@
             a.href = url;
             a.download = 'oil_optimization_history.csv';
             a.click();
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             alert('Error exporting: ' + error.message);
         }

@@ -8,41 +8,76 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="bg-gray-50">
+<body class="bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100">
     <!-- Navigation -->
-    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 py-4">
+    <nav class="bg-white border-b border-gray-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-oil-can text-2xl"></i>
+                <div class="flex items-center gap-3" style="align-items: center;">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1.5rem; height: 1.5rem;">
+                        <path d="M12 2C10.3431 2 9 3.34315 9 5C9 6.65685 10.3431 8 12 8C13.6569 8 15 6.65685 15 5C15 3.34315 13.6569 2 12 2Z" stroke="#4a90e2" stroke-width="1.5"/>
+                        <path d="M2 22L22 22" stroke="#4a90e2" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M4.5 19V13C4.5 11.3431 5.80558 10 7.5 10C9.19442 10 10.5 11.3431 10.5 13V19M13.5 19V13C13.5 11.3431 14.8056 10 16.5 10C18.1944 10 19.5 11.3431 19.5 13V19" stroke="#4a90e2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                     <div>
-                        <h1 class="text-2xl font-bold">Oil Optimization</h1>
-                        <p class="text-blue-100 text-sm">Well {{ well_name }}</p>
+                        <h1 class="text-xl font-semibold text-gray-800 tracking-tight">Oil Optimization</h1>
+                        <p class="text-gray-500 text-xs">Well {{ well_name }}</p>
                     </div>
                 </div>
-                <div class="flex gap-6">
-                    <a href="/" class="hover:text-blue-200 transition">Prediction</a>
-                    <a href="/upload" class="hover:text-blue-200 transition">Batch Upload</a>
-                    <a href="/history" class="hover:text-blue-200 transition">History</a>
+                <div class="flex gap-8">
+                    <a href="/" class="text-gray-600 hover:text-blue-500 transition font-medium text-sm relative group" 
+                       onclick="setactive(this)">
+                        Prediction
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-500 transition-all duration-300 group-hover:w-full" id="nav-prediction"></span>
+                    </a>
+                    <a href="/upload" class="text-gray-600 hover:text-blue-500 transition font-medium text-sm relative group"
+                       onclick="setActive(this)">
+                        Batch Upload
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-500 transition-all duration-300 group-hover:w-full" id="nav-upload"></span>
+                    </a>
+                    <a href="/history" class="text-gray-600 hover:text-blue-500 transition font-medium text-sm relative group"
+                       onclick="setActive(this)">
+                        History
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-500 transition-all duration-300 group-hover:w-full" id="nav-history"></span>
+                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
+
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-6 py-12">
         {% block content %}{% endblock %}
     </div>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-400 mt-16">
-        <div class="max-w-7xl mx-auto px-4 py-8 text-center">
-            <p>&copy; 2024 Oil Optimization System. All rights reserved.</p>
+    <footer class="bg-white border-t border-gray-100 mt-20">
+        <div class="max-w-7xl mx-auto px-6 py-8 text-center">
+            <p class="text-gray-500 text-sm">&copy; 2024 Oil Optimization System. All rights reserved.</p>
         </div>
     </footer>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // Set active navbar link based on current page
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('nav a');
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if ((currentPath === '/' && href === '/') || 
+                    (currentPath.startsWith('/history') && href === '/history') ||
+                    (currentPath.startsWith('/upload') && href === '/upload')) {
+                    link.classList.add('text-blue-500');
+                    const underline = link.querySelector('span');
+                    if (underline) underline.classList.add('w-full');
+                }
+            });
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
