@@ -14,8 +14,19 @@ import os
 def load_models():
     """Load XGBoost models for oil and water prediction"""
     try:
-        model_oil = joblib.load(MODEL_PATHS['oil'])
-        model_water = joblib.load(MODEL_PATHS['water'])
+        # Get the root directory to construct absolute paths
+        root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+        
+        # Build absolute paths
+        model_oil_path = os.path.join(root_dir, MODEL_PATHS['oil'])
+        model_water_path = os.path.join(root_dir, MODEL_PATHS['water'])
+        
+        print(f"Loading models from:")
+        print(f"  Oil: {model_oil_path}")
+        print(f"  Water: {model_water_path}")
+        
+        model_oil = joblib.load(model_oil_path)
+        model_water = joblib.load(model_water_path)
         print("✅ Models loaded successfully")
         return model_oil, model_water
     except Exception as e:

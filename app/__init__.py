@@ -33,5 +33,8 @@ def create_app():
     # Create database tables
     with app.app_context():
         db.create_all()
+        # Initialize ML models on startup
+        from app.utils import initialize_models
+        initialize_models()
     
     return app
