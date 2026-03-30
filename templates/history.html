@@ -59,10 +59,11 @@
             html += '</tr></thead><tbody>';
 
             data.data.forEach(prediction => {
+                const oil_optimal = prediction.predicted_oil + prediction.potential_oil_gain;
                 html += `<tr class="border-b hover:bg-gray-50">`;
                 html += `<td class="border px-4 py-2">${prediction.prediction_date}</td>`;
                 html += `<td class="border px-4 py-2 text-right">${prediction.predicted_oil.toFixed(2)}</td>`;
-                html += `<td class="border px-4 py-2 text-right">${prediction.predicted_oil.toFixed(2)}</td>`;
+                html += `<td class="border px-4 py-2 text-right text-green-600 font-semibold">${oil_optimal.toFixed(2)}</td>`;
                 html += `<td class="border px-4 py-2 text-right"><span class="text-green-600 font-semibold">+${prediction.potential_oil_gain.toFixed(2)}</span></td>`;
                 html += `<td class="border px-4 py-2 text-right">${prediction.choke_actual.toFixed(3)}</td>`;
                 html += `<td class="border px-4 py-2 text-right">${prediction.choke_recommended.toFixed(3)}</td>`;

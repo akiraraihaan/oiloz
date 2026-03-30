@@ -74,7 +74,7 @@ def predict_production(input_features):
         input_features: dict or list of 8 features
     
     Returns:
-        dict with 'oil' and 'water' predictions
+        dict with 'oil' and 'water' predictions (guaranteed ≥ 0)
     """
     if MODEL_OIL is None or MODEL_WATER is None:
         return None, "Models not loaded"
@@ -89,9 +89,13 @@ def predict_production(input_features):
         oil_pred = MODEL_OIL.predict(input_array)[0]
         water_pred = MODEL_WATER.predict(input_array)[0]
         
+        # Ensure non-negative predictions (models might predict negative)
+        oil_pred = max(0, float(oil_pred))
+        water_pred = max(0, float(water_pred))
+        
         return {
-            'oil': float(oil_pred),
-            'water': float(water_pred)
+            'oil': oil_pred,
+            'water': water_pred
         }, None
     
     except Exception as e:
@@ -103,6 +107,7 @@ def optimize_choke(input_features):
     Find optimal choke size using multi-objective optimization
     
     Objective: Maximize (Oil - Penalty * Water)
+    With constraint: Oil >= 0, Water >= 0
     
     Args:
         input_features: dict with 8 features
@@ -131,6 +136,10 @@ def optimize_choke(input_features):
             pred_oil = MODEL_OIL.predict(input_array)[0]
             pred_water = MODEL_WATER.predict(input_array)[0]
             
+            # Ensure non-negative values (models might predict negative)
+            pred_oil = max(0, pred_oil)
+            pred_water = max(0, pred_water)
+            
             # Multi-objective score: maximize oil, minimize water (with penalty)
             score = pred_oil - (PENALTY_WEIGHT * pred_water)
             
@@ -156,24 +165,24 @@ def optimize_choke(input_features):
         condition_opt = input_features.copy()
         condition_opt['AVG Choke size'] = choke_optimal
         input_array = np.array([condition_opt[f] for f in FEATURE_NAMES]).reshape(1, -1)
-        oil_opt = MODEL_OIL.predict(input_array)[0]
-        water_opt = MODEL_WATER.predict(input_array)[0]
+        oil_opt = max(0, float(MODEL_OIL.predict(input_array)[0]))
+        water_opt = max(0, float(MODEL_WATER.predict(input_array)[0]))
         
         # Predict with actual choke
         condition_actual = input_features.copy()
         condition_actual['AVG Choke size'] = choke_actual
         input_array = np.array([condition_actual[f] for f in FEATURE_NAMES]).reshape(1, -1)
-        oil_actual = MODEL_OIL.predict(input_array)[0]
-        water_actual = MODEL_WATER.predict(input_array)[0]
+        oil_actual = max(0, float(MODEL_OIL.predict(input_array)[0]))
+        water_actual = max(0, float(MODEL_WATER.predict(input_array)[0]))
         
         return {
             'choke_optimal': choke_optimal,
-            'oil_actual': float(oil_actual),
-            'oil_optimal': float(oil_opt),
-            'oil_gain': float(oil_opt - oil_actual),
-            'water_actual': float(water_actual),
-            'water_optimal': float(water_opt),
-            'water_reduction': float(water_actual - water_opt)
+            'oil_actual': oil_actual,
+            'oil_optimal': oil_opt,
+            'oil_gain': oil_opt - oil_actual,
+            'water_actual': water_actual,
+            'water_optimal': water_opt,
+            'water_reduction': water_actual - water_opt
         }, None
     
     except Exception as e:
@@ -183,42 +192,84 @@ def optimize_choke(input_features):
 def process_excel_file(filepath):
     """
     Process uploaded Excel file
+    
+    Expected columns (MUST match exactly):
+    - AVG Choke size
+    - DP_CHOKE_SIZE
+    - ON_STREAM_HRS
+    - AVG_DP_TUBING
+    - AVG_DOWNHOLE_PRESSURE
+    - AVG_DOWNHOLE_TEMPERATURE
+    - AVG_WHP_P
+    - AVG_WHT_P
+    
     Returns: list of (success/fail, result_dict)
     """
     try:
         df = pd.read_excel(filepath)
         results = []
         
+        # Check if required columns exist
+        missing_cols = [col for col in FEATURE_NAMES if col not in df.columns]
+        if missing_cols:
+            return {
+                'error': f'Missing required columns: {", ".join(missing_cols)}. Expected columns: {", ".join(FEATURE_NAMES)}'
+            }
+        
+        # Process each row
         for idx, row in df.iterrows():
             # Convert row to dict
             input_dict = row.to_dict()
             
-            # Validate
-            is_valid, errors = validate_input(input_dict)
+            # Filter only required features & check for NaN values
+            filtered_dict = {}
+            has_nan = False
+            for feature in FEATURE_NAMES:
+                val = input_dict[feature]
+                # Check for NaN or None
+                if pd.isna(val) or val is None:
+                    has_nan = True
+                    break
+                try:
+                    filtered_dict[feature] = float(val)
+                except (ValueError, TypeError):
+                    has_nan = True
+                    break
+            
+            if has_nan:
+                results.append({
+                    'row': idx + 2,  # +2 because row 1 is header, idx is 0-based
+                    'success': False,
+                    'error': 'Row has missing or invalid values (NaN, empty, non-numeric)'
+                })
+                continue
+            
+            # Validate input bounds
+            is_valid, errors = validate_input(filtered_dict)
             
             if not is_valid:
                 results.append({
-                    'row': idx + 1,
+                    'row': idx + 2,
                     'success': False,
                     'error': ', '.join(errors)
                 })
                 continue
             
             # Predict
-            pred, pred_error = predict_production(input_dict)
+            pred, pred_error = predict_production(filtered_dict)
             if pred_error:
                 results.append({
-                    'row': idx + 1,
+                    'row': idx + 2,
                     'success': False,
                     'error': pred_error
                 })
                 continue
             
             # Optimize
-            opt, opt_error = optimize_choke(input_dict)
+            opt, opt_error = optimize_choke(filtered_dict)
             if opt_error:
                 results.append({
-                    'row': idx + 1,
+                    'row': idx + 2,
                     'success': False,
                     'error': opt_error
                 })
@@ -226,10 +277,10 @@ def process_excel_file(filepath):
             
             # Success
             results.append({
-                'row': idx + 1,
+                'row': idx + 2,
                 'success': True,
                 'data': {
-                    **input_dict,
+                    **filtered_dict,
                     'predicted_oil': pred['oil'],
                     'predicted_water': pred['water'],
                     'choke_recommended': opt['choke_optimal'],
@@ -241,4 +292,4 @@ def process_excel_file(filepath):
         return results
     
     except Exception as e:
-        return {'error': str(e)}
+        return {'error': f'Excel parsing error: {str(e)}'}
