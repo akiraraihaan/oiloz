@@ -11,7 +11,12 @@ db = SQLAlchemy()
 
 def create_app():
     """Create and configure the Flask application"""
-    app = Flask(__name__)
+    # Get the root directory
+    root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    
+    app = Flask(__name__, 
+                template_folder=os.path.join(root_dir, 'templates'),
+                static_folder=os.path.join(root_dir, 'static'))
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
