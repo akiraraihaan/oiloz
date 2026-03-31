@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}History - Oil Optimization System{% endblock %}
+{% block title %}History - Oiloz{% endblock %}
 
 {% block content %}
 
@@ -39,9 +39,9 @@
 </div>
 
 <!-- History Table -->
-<div id="historyTable" class="hidden card rounded-2xl overflow-hidden">
+<div id="historyTable" class="hidden card rounded-2xl overflow-hidden mb-6">
     <div class="overflow-x-auto">
-        <table>
+        <table style="width: 100%; min-width: 800px;">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -56,6 +56,19 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<!-- Pagination Controls -->
+<div id="paginationControls" class="hidden flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+    <button id="prevBtn" class="btn btn-ghost btn-pill" onclick="previousPage()">← Previous</button>
+    <div id="pageInfo" class="text-gray-600 font-medium text-sm">Page 1</div>
+    
+    <!-- Page Jump Dropdown -->
+    <select id="pageJump" class="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:border-gray-400 transition cursor-pointer" onchange="jumpToPage(this.value)">
+        <option value="">Jump to page...</option>
+    </select>
+    
+    <button id="nextBtn" class="btn btn-ghost btn-pill" onclick="nextPage()">Next →</button>
 </div>
 
 <!-- Empty State -->
@@ -75,12 +88,16 @@
 
 {% block scripts %}
 <script>
+    const ITEMS_PER_PAGE = 10;
+    let allPredictions = [];
+    let currentPage = 1;
+
     document.addEventListener('DOMContentLoaded', loadHistory);
     document.getElementById('exportBtn').addEventListener('click', exportHistory);
 
     async function loadHistory() {
         try {
-            const response = await fetch('/api/history?limit=100');
+            const response = await fetch('/api/history?limit=1000');
             const data = await response.json();
 
             document.getElementById('loadingSpinner').classList.add('hidden');
@@ -90,27 +107,12 @@
                 return;
             }
 
-            // Populate table body
-            const tableBody = document.getElementById('historyTableBody');
-            data.data.forEach(prediction => {
-                const oil_optimal = prediction.predicted_oil + prediction.potential_oil_gain;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${prediction.prediction_date}</td>
-                    <td class="text-right text-gray-700">${prediction.predicted_oil.toFixed(2)}</td>
-                    <td class="text-right">
-                        <span class="text-green-600 font-semibold">${oil_optimal.toFixed(2)}</span>
-                    </td>
-                    <td class="text-right">
-                        <span class="badge badge-success">+${prediction.potential_oil_gain.toFixed(2)}</span>
-                    </td>
-                    <td class="text-right text-gray-700">${prediction.choke_actual.toFixed(3)}</td>
-                    <td class="text-right text-blue-600 font-semibold">${prediction.choke_recommended.toFixed(3)}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-
+            allPredictions = data.data;
+            currentPage = 1;
+            displayPage(currentPage);
             document.getElementById('historyTable').classList.remove('hidden');
+            updatePagination();
+
         } catch (error) {
             document.getElementById('loadingSpinner').classList.add('hidden');
             const historyTable = document.getElementById('historyTable');
@@ -121,6 +123,79 @@
                     Error loading history: ${error.message}
                 </div>
             `;
+        }
+    }
+
+    function displayPage(page) {
+        const startIdx = (page - 1) * ITEMS_PER_PAGE;
+        const endIdx = startIdx + ITEMS_PER_PAGE;
+        const pageData = allPredictions.slice(startIdx, endIdx);
+
+        const tableBody = document.getElementById('historyTableBody');
+        tableBody.innerHTML = '';
+
+        pageData.forEach(prediction => {
+            const oil_optimal = prediction.predicted_oil + prediction.potential_oil_gain;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${prediction.prediction_date}</td>
+                <td class="text-right text-gray-700">${prediction.predicted_oil.toFixed(2)}</td>
+                <td class="text-right">
+                    <span class="text-green-600 font-semibold">${oil_optimal.toFixed(2)}</span>
+                </td>
+                <td class="text-right">
+                    <span class="badge badge-success">+${prediction.potential_oil_gain.toFixed(2)}</span>
+                </td>
+                <td class="text-right text-gray-700">${prediction.choke_actual.toFixed(3)}</td>
+                <td class="text-right text-blue-600 font-semibold">${prediction.choke_recommended.toFixed(3)}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    function updatePagination() {
+        const totalPages = Math.ceil(allPredictions.length / ITEMS_PER_PAGE);
+        
+        document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        document.getElementById('paginationControls').classList.remove('hidden');
+        
+        // Update page jump dropdown
+        const pageJump = document.getElementById('pageJump');
+        pageJump.innerHTML = '<option value="">Jump to page...</option>';
+        for (let i = 1; i <= totalPages; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `Page ${i}`;
+            if (i === currentPage) option.selected = true;
+            pageJump.appendChild(option);
+        }
+    }
+
+    function previousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            displayPage(currentPage);
+            updatePagination();
+        }
+    }
+
+    function nextPage() {
+        const totalPages = Math.ceil(allPredictions.length / ITEMS_PER_PAGE);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayPage(currentPage);
+            updatePagination();
+        }
+    }
+
+    function jumpToPage(page) {
+        const pageNum = parseInt(page);
+        if (pageNum && pageNum > 0 && pageNum <= Math.ceil(allPredictions.length / ITEMS_PER_PAGE)) {
+            currentPage = pageNum;
+            displayPage(currentPage);
+            updatePagination();
         }
     }
 
