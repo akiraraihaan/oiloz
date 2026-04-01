@@ -536,13 +536,28 @@ svg.icon path, svg.icon line {
 
 .d3-chart text {
     font-size: 12px;
-    fill: var(--color-text-muted);
+    fill: var(--color-text-secondary);
     font-weight: 500;
 }
 
 .d3-chart .axis {
-    stroke: var(--color-border);
+    stroke: none;
+}
+
+.d3-chart .axis line,
+.d3-chart .axis path {
+    stroke: #e5e7eb;
     stroke-width: 1px;
+}
+
+.d3-chart .y-axis .tick line {
+    stroke: #f3f4f6;
+    stroke-dasharray: 0;
+    opacity: 0.5;
+}
+
+.d3-chart .x-axis .tick line {
+    display: none;
 }
 
 .d3-chart .axis-label {
@@ -551,7 +566,7 @@ svg.icon path, svg.icon line {
 }
 
 .d3-chart .grid {
-    opacity: 0.3;
+    opacity: 0.2;
 }
 
 .d3-chart .grid line {
@@ -577,14 +592,14 @@ svg.icon path, svg.icon line {
     stroke-linejoin: round;
 }
 
-.d3-chart .bar {
-    fill: var(--color-accent-blue);
-    transition: fill 0.2s ease, filter 0.2s ease;
+.d3-chart .bar:hover {
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+    opacity: 0.9;
 }
 
-.d3-chart .bar:hover {
-    fill: #3b7dd4;
-    filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));
+.d3-chart .bar-label {
+    font-weight: 600;
+    pointer-events: none;
 }
 
 .d3-chart .tooltip {

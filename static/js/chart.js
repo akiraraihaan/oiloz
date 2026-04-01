@@ -10,10 +10,10 @@ function drawComparisonChart(containerId, title, actualValue, optimalValue, unit
     // Clear previous chart
     container.innerHTML = '';
 
-    // Data
+    // Data with teal/mint colors
     const data = [
-        { label: 'Actual', value: actualValue, color: '#3B82F6' },
-        { label: 'Optimal', value: optimalValue, color: '#10B981' }
+        { label: 'Actual', value: actualValue, color: '#0f766e' }, // Dark teal
+        { label: 'Optimal', value: optimalValue, color: '#14b8a6' } // Teal
     ];
 
     const maxValue = Math.max(actualValue, optimalValue) * 1.2;
@@ -28,22 +28,58 @@ function drawComparisonChart(containerId, title, actualValue, optimalValue, unit
         .append('svg')
         .attr('class', 'd3-chart')
         .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
-        .append('g')
+        .attr('height', height + margin.top + margin.bottom);
+
+    // Create defs for gradients
+    const defs = svg.append('defs');
+    
+    // Gradient 1 - Muted Teal with reduced opacity
+    const grad1 = defs.append('linearGradient')
+        .attr('id', `gradient-actual`)
+        .attr('x1', '0%').attr('x2', '100%')
+        .attr('y1', '0%').attr('y2', '100%');
+    
+    grad1.append('stop').attr('offset', '0%').attr('stop-color', '#5b9f99').attr('stop-opacity', 0.6);
+    grad1.append('stop').attr('offset', '25%').attr('stop-color', '#5b9f99').attr('stop-opacity', 0.6);
+    grad1.append('stop').attr('offset', '25%').attr('stop-color', '#7fb3b0').attr('stop-opacity', 0.5);
+    grad1.append('stop').attr('offset', '50%').attr('stop-color', '#7fb3b0').attr('stop-opacity', 0.5);
+    grad1.append('stop').attr('offset', '50%').attr('stop-color', '#5b9f99').attr('stop-opacity', 0.6);
+    grad1.append('stop').attr('offset', '75%').attr('stop-color', '#5b9f99').attr('stop-opacity', 0.6);
+    grad1.append('stop').attr('offset', '75%').attr('stop-color', '#7fb3b0').attr('stop-opacity', 0.5);
+    grad1.append('stop').attr('offset', '100%').attr('stop-color', '#7fb3b0').attr('stop-opacity', 0.5);
+
+    // Gradient 2 - Muted Mint with reduced opacity
+    const grad2 = defs.append('linearGradient')
+        .attr('id', `gradient-optimal`)
+        .attr('x1', '0%').attr('x2', '100%')
+        .attr('y1', '0%').attr('y2', '100%');
+    
+    grad2.append('stop').attr('offset', '0%').attr('stop-color', '#6db8b0').attr('stop-opacity', 0.6);
+    grad2.append('stop').attr('offset', '25%').attr('stop-color', '#6db8b0').attr('stop-opacity', 0.6);
+    grad2.append('stop').attr('offset', '25%').attr('stop-color', '#9fcdc6').attr('stop-opacity', 0.5);
+    grad2.append('stop').attr('offset', '50%').attr('stop-color', '#9fcdc6').attr('stop-opacity', 0.5);
+    grad2.append('stop').attr('offset', '50%').attr('stop-color', '#6db8b0').attr('stop-opacity', 0.6);
+    grad2.append('stop').attr('offset', '75%').attr('stop-color', '#6db8b0').attr('stop-opacity', 0.6);
+    grad2.append('stop').attr('offset', '75%').attr('stop-color', '#9fcdc6').attr('stop-opacity', 0.5);
+    grad2.append('stop').attr('offset', '100%').attr('stop-color', '#9fcdc6').attr('stop-opacity', 0.5);
+
+    const chartGroup = svg.append('g')
         .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Scales
     const xScale = d3.scaleBand()
         .domain(data.map(d => d.label))
         .range([0, width])
-        .padding(0.3);
+        .padding(0.4);
 
     const yScale = d3.scaleLinear()
         .domain([0, maxValue])
         .range([height, 0]);
 
-    // Bars
-    svg.selectAll('.bar')
+    const barRadius = xScale.bandwidth() / 2.5;
+
+    // Bars dengan gradient
+    chartGroup.selectAll('.bar')
         .data(data)
         .enter()
         .append('rect')
@@ -52,53 +88,61 @@ function drawComparisonChart(containerId, title, actualValue, optimalValue, unit
         .attr('y', d => yScale(d.value))
         .attr('width', xScale.bandwidth())
         .attr('height', d => height - yScale(d.value))
-        .attr('fill', d => d.color);
+        .attr('rx', barRadius)
+        .attr('ry', barRadius)
+        .attr('fill', (d, i) => {
+            return i === 0 ? 'url(#gradient-actual)' : 'url(#gradient-optimal)';
+        });
 
     // Value labels on bars
-    svg.selectAll('.bar-label')
+    chartGroup.selectAll('.bar-label')
         .data(data)
         .enter()
         .append('text')
         .attr('class', 'bar-label')
         .attr('x', d => xScale(d.label) + xScale.bandwidth() / 2)
-        .attr('y', d => yScale(d.value) - 5)
+        .attr('y', d => yScale(d.value) - 8)
         .attr('text-anchor', 'middle')
-        .attr('font-weight', 'bold')
-        .attr('fill', '#333')
+        .attr('font-weight', '600')
+        .attr('font-size', '13px')
+        .attr('fill', '#1f2937')
         .text(d => `${d.value.toFixed(2)} ${unit}`);
 
-    // Y-axis
-    const yAxis = d3.axisLeft(yScale);
-    svg.append('g')
-        .attr('class', 'axis')
+    // Y-axis styling
+    const yAxis = d3.axisLeft(yScale)
+        .tickSize(-width)
+        .tickFormat(d => d);
+    
+    chartGroup.append('g')
+        .attr('class', 'axis y-axis')
         .call(yAxis);
 
     // X-axis
     const xAxis = d3.axisBottom(xScale);
-    svg.append('g')
-        .attr('class', 'axis')
+    chartGroup.append('g')
+        .attr('class', 'axis x-axis')
         .attr('transform', `translate(0,${height})`)
         .call(xAxis);
 
     // Title
-    svg.append('text')
+    chartGroup.append('text')
         .attr('x', width / 2)
         .attr('y', -5)
         .attr('text-anchor', 'middle')
         .attr('font-size', '14px')
-        .attr('font-weight', 'bold')
-        .attr('fill', '#333')
+        .attr('font-weight', '600')
+        .attr('fill', '#1f2937')
         .text(title + ` (${unit})`);
 
     // Y-axis label
-    svg.append('text')
+    chartGroup.append('text')
         .attr('transform', 'rotate(-90)')
         .attr('y', 0 - margin.left)
         .attr('x', 0 - (height / 2))
         .attr('dy', '1em')
         .attr('text-anchor', 'middle')
         .attr('font-size', '12px')
-        .attr('fill', '#666')
+        .attr('fill', '#6b7280')
         .text(unit);
 }
 
